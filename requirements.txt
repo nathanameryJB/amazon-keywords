@@ -1,0 +1,4 @@
+inflect==6.0.2
+openai==0.26.5
+pandas==1.5.3
+streamlit==1.18.1

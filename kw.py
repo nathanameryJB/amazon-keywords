@@ -45,15 +45,23 @@ def cleanKw(kw, product_name):
 
 
 def prompt(product_name, prompt_text, openaikey):
-    # create a completion
-    prompt =prompt_text +(product_name)
-    openai.api_key  = openaikey
-    completion = openai.Completion.create(engine="text-davinci-003", prompt=prompt + str(product_name),max_tokens=500, temperature=0.7)
-    #return only the text itself:
-    kw = completion["choices"][0]["text"]
-    #replace the commas with ' ' for correct format for amazon::
-    kw= kw.replace(',', ' ')
-    kw = cleanKw(kw, product_name)
+    try:
+        # create a completion
+        prompt = prompt_text + product_name
+        openai.api_key = openaikey
+        completion = openai.Completion.create(engine="text-davinci-003", prompt=prompt, max_tokens=500, temperature=0.7)
+
+        # return only the text itself:
+        kw = completion["choices"][0]["text"]
+        # replace the commas with spaces for correct format for Amazon:
+        kw = kw.replace(',', ' ')
+        kw = cleanKw(kw, product_name)
+
+        return kw
+
+    except Exception as e:
+        st.warning("An error occurred while calling the OpenAI API: {}".format(str(e)))
+        return ""
 
 
     return kw
@@ -63,10 +71,7 @@ def prompt(product_name, prompt_text, openaikey):
 # Define a function to load the CSV file
 def load_data(file):
     data = pd.read_csv(file)
-    #data = data.assign(keywords=prompt(str(data["product_name"][0]), str(prompt_text)))
-    #data = data.apply(keywords=lambda x: prompt(str(x["product_name"][0]), str(prompt_text)))
     data["keywords"] = data.apply(lambda row: prompt(row["product_name"], prompt_text, openaikey).strip(), axis=1)
-
     return data
 
 

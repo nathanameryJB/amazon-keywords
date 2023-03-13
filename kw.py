@@ -15,8 +15,13 @@ def getKey(openaikey):
     return openaikey
 getKey(openaikey)
 
+outputKw = st.checkbox('Use AI to give me a list of keywords for each product')
+outputTitles = st.checkbox('Use AI to give me an optimised title for each product')
 
-prompt_text="imagine you're an amazon uk seller optimisation expert and write me a comma separated list of 30 single-word keywords that will help this product sell more - use British spellings: "
+
+kw_prompt_text="imagine you're an amazon uk seller optimisation expert and write me a comma separated list of 30 single-word keywords that will help this product sell more - use British spellings: "
+title_prompt_text= "Write an amazon product title for a piece of jewellery. Incorporate keywords such as the metal type (e.g. Sterling Silver, 9ct Gold, as well as related terms like 925 for silver), gemstone type (only if a stone is mentioned), the gender of the intended recipient, any unique design features, the occaision where the item might be gifted (e.g. birthday, anniversary), use words like quality, authentic, real. Cram the title with keywords. Use British spellings: "
+
 
 
 
@@ -45,35 +50,47 @@ def cleanKw(kw, product_name):
 
 
 def prompt(product_name, prompt_text, openaikey):
-    try:
-        # create a completion
-        prompt = prompt_text + product_name
-        openai.api_key = openaikey
-        completion = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=[{"role": "user", "content": prompt}])
+    if openaikey and (outputKw or outputTitles):
+        try:
+            # create a completion
+            prompt = prompt_text + product_name
+            openai.api_key = openaikey
+            #st.write(prompt)
+            completion = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=[{"role": "user", "content": prompt}])
+            #ƒstst.write(completion)
+            # return only the text itself:
+            kw = completion["choices"][0].message.content;
 
-        # return only the text itself:
-        kw = completion["choices"][0].message.content;
-        # replace the commas with spaces for correct format for Amazon:
-        kw = kw.replace(',', ' ')
-        kw = cleanKw(kw, product_name)
+            if outputKw:
+                # replace the commas with spaces for correct format for Amazon:
+                kw = kw.replace(',', ' ')
+                kw = cleanKw(kw, product_name)
+                return kw
+
+            else:
+                return kw
+
+        except Exception as e:
+            st.warning("An error occurred while calling the OpenAI API: {}".format(str(e)))
+            return ""
+
 
         return kw
-
-    except Exception as e:
-        st.warning("An error occurred while calling the OpenAI API: {}".format(str(e)))
+    else:
+        st.warning("you're missing something")
         return ""
-
-
-    return kw
 
 
 
 # Define a function to load the CSV file
 def load_data(file):
     data = pd.read_csv(file)
-    data["keywords"] = data.apply(lambda row: prompt(row["product_name"], prompt_text, openaikey).strip(), axis=1)
-    return data
-
+    if outputKw:
+        data["keywords"] = data.apply(lambda row: prompt(row["product_name"], kw_prompt_text, openaikey).strip(), axis=1)
+        return data
+    else:
+        data["title"] = data.apply(lambda row: prompt(row["product_name"], title_prompt_text, openaikey).strip(), axis=1)
+        return data
 
 @st.cache_data
 def convert_df(df):

@@ -49,10 +49,10 @@ def prompt(product_name, prompt_text, openaikey):
         # create a completion
         prompt = prompt_text + product_name
         openai.api_key = openaikey
-        completion = openai.Completion.create(engine="text-davinci-003", prompt=prompt, max_tokens=500, temperature=0.7)
+        completion = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=[{"role": "user", "content": prompt}])
 
         # return only the text itself:
-        kw = completion["choices"][0]["text"]
+        kw = completion["choices"][0].message.content;
         # replace the commas with spaces for correct format for Amazon:
         kw = kw.replace(',', ' ')
         kw = cleanKw(kw, product_name)
